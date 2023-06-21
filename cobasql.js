@@ -235,48 +235,51 @@ app.post('/booking', function(req, res) {
   });
 
 //cancel booking
+// cancel booking
 app.post('/cancelbooking', function(req, res) {
     console.log('POST request /cancelbooking');
-    let username = {user: req.body.username};
-    json.getString
-    let bookingid = {bookid: req.body.bookingid};
-    let check = "SELECT username FROM booking WHERE username ='"+username.user+"' AND bookingid='"+bookingid.bookid+"'";
-
-    let checker = conn.query(check, (err, checkresult)=>{
-        console.log(JSON.stringify(
-            {
-                "status" : 200,
-                "error" : null,
-                "response" : checkresult
-            }
-        ));
-        console.log(checkresult);
-        if (checkresult != ""){
-            let sql = "DELETE FROM booking WHERE bookingid='"+bookingid.bookid+"'";
-            let query = conn.query(sql, (err, result) =>{
-                console.log(JSON.stringify(
-                    {
-                        "status" : 200,
-                        "error" : null,
-                        "response" : result
-                    }
-                ));
-                conn.query(check, (err, checkresult) => {
-                    console.log(JSON.stringify(
-                        {
-                            "status" : 200,
-                            "error" : null,
-                            "response" : checkresult
+    let username = req.body.username;
+    let bookingid = req.body.bookingid;
+    let checkBookingQuery = "SELECT * FROM booking WHERE username = ? AND bookingid = ?";
+    let checkBookingParams = [username, bookingid];
+  
+    conn.query(checkBookingQuery, checkBookingParams, (err, bookingResult) => {
+        if (err) {
+            console.error(err);
+            res.status(500).json({ status: 500, error: 'Internal Server Error', response: null });
+        } else {
+            if (bookingResult.length > 0) {
+                let deleteBookingQuery = "DELETE FROM booking WHERE bookingid = ?";
+                let deleteBookingParams = [bookingid];
+              
+                conn.query(deleteBookingQuery, deleteBookingParams, (err, deleteResult) => {
+                    if (err) {
+                        console.error(err);
+                        res.status(500).json({ status: 500, error: 'Internal Server Error', response: null });
+                    } else {
+                        if (deleteResult.affectedRows > 0) {
+                            let updateAvailabilityQuery = "UPDATE list_mobil SET jumlah_mobil = jumlah_mobil + 1 WHERE jenis_mobil = ?";
+                            let updateAvailabilityParams = [bookingResult[0].jenis_mobil];
+                          
+                            conn.query(updateAvailabilityQuery, updateAvailabilityParams, (err, updateResult) => {
+                                if (err) {
+                                    console.error(err);
+                                    res.status(500).json({ status: 500, error: 'Internal Server Error', response: null });
+                                } else {
+                                    console.log("Booking canceled. Restocked the vehicle.");
+                                    res.status(200).json({ status: 200, error: null, response: 'Booking canceled. Vehicle restocked.' });
+                                }
+                            });
+                        } else {
+                            res.status(500).json({ status: 500, error: 'Internal Server Error', response: null });
                         }
-                    ));
+                    }
                 });
-                res.send ("Berhasil menghapus booking")
-            });
+            } else {
+                res.status(404).json({ status: 404, error: 'Not Found', response: 'Booking not found.' });
+            }
         }
-        else {
-            res.send ("Gagal menghapus booking")
-        }
-    })
+    });
 });
 
 var server = app.listen(7000, function(){
