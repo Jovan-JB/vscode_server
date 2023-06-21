@@ -218,7 +218,7 @@ app.post('/booking', function(req, res) {
                     res.status(500).json({ status: 500, error: 'Internal Server Error', response: null });
                   } else {
                     console.log("Booking data inserted.");
-                    res.status(200).json({response: `Berhasil Booking, booking id = ${bookingResult.insertId}` });
+                    res.status(200).json(bookingResult.insertId);
 			        //res.send ("Berhasil Booking, booking id = "+result.insertId)
                   }
                 });
